@@ -1,6 +1,8 @@
 local MAX_RETRIES = 7
 local RETRY_INTERVAL = 500000 -- 0.5s
-local WAIT_INTERVAL = 3.6 -- 3.6s
+local WAIT_INTERVAL = 3.6 -- 3.6s (max retries x interval + 0.1s)
+local CONFIG_FILE = "config_files/config.lua"
+
 
 local obj = {}
 obj.__index = obj
@@ -8,7 +10,7 @@ obj.__index = obj
 
 -- load configuration
 function obj:init()
-    local configFilePath = hs.spoons.resourcePath("config_files/config.lua")
+    local configFilePath = hs.spoons.resourcePath(CONFIG_FILE)
     if configFilePath then
         local configTable = dofile(configFilePath)
         obj.configTable = configTable
@@ -64,50 +66,67 @@ local function openOrFocusApp(appBundleId)
 end
 
 
-function obj:openAndMoveAppWindowToSpaceOnDisplay()
-    local waitInterval = WAIT_INTERVAL
-    local allScreens = hs.screen.allScreens()
-    for displayIndex, spaces in pairs(self.configTable) do
+function obj:findBundleIdByKeyword(keyword)
+    local command = string.format([[
+        mdfind "kMDItemContentType == 'com.apple.application-bundle'" |
+        grep -i %s |
+        while read -r app; do
+        defaults read "$app/Contents/Info.plist" CFBundleIdentifier
+    done
+    ]], keyword)
 
+    return hs.execute(command)
+end
+
+
+local function getWaitInterval(shouldOpenApps)
+    if shouldOpenApps then return WAIT_INTERVAL else return 0 end
+end
+
+
+function obj:createSpacesAndArrange(shouldOpen)
+    local waitInterval = getWaitInterval(shouldOpen)
+    local allScreens = hs.screen.allScreens()
+
+    for displayIndex, spaces in pairs(self.configTable) do
         local targetScreen = allScreens[displayIndex]
         local screenFrame = targetScreen:fullFrame()
 
         if not targetScreen then
             hs.alert.show("Invalid display index")
-            goto continueDisplay
+            goto continueDisplay -- if failed, go to another display
         end
 
         for spaceIndex, apps in pairs(spaces) do
             local spaceId = ensureSpaceOnScreen(targetScreen, spaceIndex)
             if not spaceId then
-                goto continueSpace
+                goto continueSpace -- if failed, go to another workspace
             end
 
             for _, appBundleId in pairs(apps) do
-
-                openOrFocusApp(appBundleId)
+                if shouldOpen then
+                    openOrFocusApp(appBundleId)
+                end
 
                 local app = hs.application.find(appBundleId)
                 if not app then
-                    hs.alert.show("Error opening application " .. appBundleId)
-                    goto continueApp
+                    goto continueApp -- if failed, go to another app
                 end
 
                 local win = getAppMainWindowWithRetries(app, MAX_RETRIES)
                 if not win then
-                    hs.alert.show("Error getting main application window" .. appBundleId)
-                    goto continueApp
+                    goto continueApp -- if failed, go to another app
                 end
 
-
+                -- happens in separate threads. Waiting ensures app had time to open and window was retrieved
                 hs.timer.doAfter(WAIT_INTERVAL, function()
                     hs.spaces.moveWindowToSpace(win:id(), spaceId)
                     win:setTopLeft(hs.geometry.point(screenFrame.x, screenFrame.y))
                     win:maximize()
-                    hs.alert.show(appBundleId .. " window moved to space " .. spaceIndex
-                        .. " on display " .. displayIndex)
+                   -- hs.alert.show(appBundleId .. " window moved to space " .. spaceIndex
+                   --     .. " on display " .. displayIndex)
                 end)
-                waitInterval = waitInterval + WAIT_INTERVAL
+                waitInterval = waitInterval + getWaitInterval(shouldOpen)
             end
             ::continueApp::
         end
@@ -115,6 +134,9 @@ function obj:openAndMoveAppWindowToSpaceOnDisplay()
     end
     ::continueDisplay::
 end
+
+
+
 
 
 
