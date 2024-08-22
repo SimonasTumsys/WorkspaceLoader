@@ -20,9 +20,9 @@ local config = {
         [2] = {
             "com.tinyspeck.slackmacgap"
         },
---        [3] = {
---            "com.postmanlabs.mac"
---        }
+        [3] = {
+            "com.postmanlabs.mac"
+        }
     }
 }
 

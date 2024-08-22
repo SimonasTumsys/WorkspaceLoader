@@ -1,5 +1,6 @@
 local MAX_RETRIES = 7
-local RETRY_INTERVAL = 1
+local RETRY_INTERVAL = 500000 -- 0.5s
+local WAIT_INTERVAL = 3.6 -- 3.6s
 
 local obj = {}
 obj.__index = obj
@@ -7,7 +8,7 @@ obj.__index = obj
 
 -- load configuration
 function obj:init()
-    local configFilePath = hs.spoons.resourcePath("config.lua")
+    local configFilePath = hs.spoons.resourcePath("config_files/config.lua")
     if configFilePath then
         local configTable = dofile(configFilePath)
         obj.configTable = configTable
@@ -24,11 +25,11 @@ local function ensureSpaceOnScreen(targetScreen, spaceIndex)
 
     local currentSpaceCount = #spaces
     if spaceIndex <= currentSpaceCount then
-        return spaces[spaceIndex] 
+        return spaces[spaceIndex]
     end
 
     for _ = currentSpaceCount, spaceIndex do
-        hs.spaces.addSpaceToScreen(targetScreen:id(), false)
+        hs.spaces.addSpaceToScreen(targetScreen:id())
     end
 
     spaces = hs.spaces.spacesForScreen(targetScreen)
@@ -44,13 +45,11 @@ local function getAppMainWindowWithRetries(app, remainingRetries)
 
     local win = app:mainWindow()
     if win then
-        print("Gaunam win")
         return win end
 
-    hs.timer.doAfter(RETRY_INTERVAL, function()
-        hs.alert.show("Retrying to find app's main window... Remaining retries: " .. remainingRetries - 1)
-        getAppMainWindowWithRetries(app, remainingRetries - 1)
-    end)
+    hs.timer.usleep(RETRY_INTERVAL)
+    hs.alert.show("Retrying to find app's main window... Remaining retries: " .. remainingRetries - 1)
+    return getAppMainWindowWithRetries(app, remainingRetries - 1)
 end
 
 
@@ -66,47 +65,57 @@ end
 
 
 function obj:openAndMoveAppWindowToSpaceOnDisplay()
+    local waitInterval = WAIT_INTERVAL
     local allScreens = hs.screen.allScreens()
-    for displayIndex, spaces in pairs(self.configTable) do 
+    for displayIndex, spaces in pairs(self.configTable) do
 
         local targetScreen = allScreens[displayIndex]
         local screenFrame = targetScreen:fullFrame()
 
         if not targetScreen then
             hs.alert.show("Invalid display index")
-            return
+            goto continueDisplay
         end
 
-        for spaceIndex, apps in pairs(spaces) do 
+        for spaceIndex, apps in pairs(spaces) do
             local spaceId = ensureSpaceOnScreen(targetScreen, spaceIndex)
-            if not spaceId then return end
-            for _, appBundleId in pairs(apps) do 
+            if not spaceId then
+                goto continueSpace
+            end
+
+            for _, appBundleId in pairs(apps) do
 
                 openOrFocusApp(appBundleId)
 
                 local app = hs.application.find(appBundleId)
                 if not app then
                     hs.alert.show("Error opening application " .. appBundleId)
-                    return
+                    goto continueApp
                 end
 
                 local win = getAppMainWindowWithRetries(app, MAX_RETRIES)
                 if not win then
-                    print("NOT WIN :(")
-                    return
+                    hs.alert.show("Error getting main application window" .. appBundleId)
+                    goto continueApp
                 end
 
-               hs.spaces.moveWindowToSpace(win:id(), spaceId)
-               win:setTopLeft(hs.geometry.point(screenFrame.x, screenFrame.y))
-               win:maximize()
 
-               hs.alert.show(appBundleId .. " window moved to space " .. spaceIndex
-                   .. " on display " .. displayIndex)
-
+                hs.timer.doAfter(WAIT_INTERVAL, function()
+                    hs.spaces.moveWindowToSpace(win:id(), spaceId)
+                    win:setTopLeft(hs.geometry.point(screenFrame.x, screenFrame.y))
+                    win:maximize()
+                    hs.alert.show(appBundleId .. " window moved to space " .. spaceIndex
+                        .. " on display " .. displayIndex)
+                end)
+                waitInterval = waitInterval + WAIT_INTERVAL
             end
+            ::continueApp::
         end
+        ::continueSpace::
     end
+    ::continueDisplay::
 end
+
 
 
 
