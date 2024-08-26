@@ -57,6 +57,10 @@ function obj:search()
     local _, hint = hs.dialog.textPrompt("Search for app's BundleID", 
         "Provide search hint for App Name, e.g. slack")
     local result = splitByNewline(findBundleIdByKeyword(hint))
+    if #result < 1 then
+        hs.alert.show("No Bundle IDs found for '" .. hint .."' hint")
+        return
+    end
     showSelectionDialog(result)
 end
 
