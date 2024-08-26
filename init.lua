@@ -18,3 +18,8 @@ hs.hotkey.bind({"cmd", "alt", "ctrl"}, "S", function ()
 end)
 
 
+hs.hotkey.bind({"cmd", "alt", "ctrl"}, "C", function ()
+    spoon.WorkspaceLoader:chooseConfig()
+end)
+
+

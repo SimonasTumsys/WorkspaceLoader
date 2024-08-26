@@ -1,7 +1,8 @@
 local MAX_RETRIES = 7
 local RETRY_INTERVAL = 500000 -- 0.5s
 local WAIT_INTERVAL = 3.6 -- 3.6s (max retries x interval + 0.1s)
-local CONFIG_FILE = "config_files/config.lua"
+local CONFIG_ROOT_DIR = "config_files"
+local SPOON_DIR = "Spoons/WorkspaceLoader.spoon"
 
 
 local obj = {}
@@ -10,10 +11,57 @@ obj.__index = obj
 
 -- load configuration
 function obj:init()
-    local configFilePath = hs.spoons.resourcePath(CONFIG_FILE)
-    if configFilePath then
-        obj.configTable = dofile(configFilePath)
+    if not self.configTable then
+        self:chooseConfig()
     end
+end
+
+
+local function findConfigFiles()
+    local configDirectory = SPOON_DIR .. "/" .. CONFIG_ROOT_DIR
+    local files = {}
+
+    for item in hs.fs.dir(configDirectory) do
+        if item ~= "." and item ~= ".." then
+            table.insert(files, item)
+        end
+    end
+
+    return files
+end
+
+
+function obj:setConfiguration(fileName)
+    local configFile = hs.spoons.resourcePath(CONFIG_ROOT_DIR .. "/" .. fileName)
+
+    if configFile then
+        self.configTable = dofile(configFile)
+    end
+end
+
+
+function obj:chooseConfig()
+    local items = findConfigFiles()
+    local choices = {}
+
+    for i, item in ipairs(items) do
+        table.insert(choices, {
+            text = item,
+            index = i
+        })
+    end
+
+    local chooser = hs.chooser.new(function(choice)
+        if not choice then return end
+        local selectedItem = items[choice.index]
+        self:setConfiguration(selectedItem)
+    end)
+
+    chooser:choices(choices)
+    chooser:width(30)
+    chooser:rows(#choices)
+
+    chooser:show()
 end
 
 
@@ -29,7 +77,7 @@ local function ensureSpaceOnScreen(targetScreen, spaceIndex)
         return spaces[spaceIndex]
     end
 
-    for _ = currentSpaceCount, spaceIndex do
+    for _ = currentSpaceCount + 1, spaceIndex do
         hs.spaces.addSpaceToScreen(targetScreen:id())
     end
 
