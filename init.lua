@@ -1,15 +1,20 @@
 hs.ipc.cliInstall()
-
 hs.loadSpoon("WorkspaceLoader")
+hs.loadSpoon("BundleIdFinder")
 
 
-function test(shouldOpen)
-    spoon.WorkspaceLoader:createSpacesAndArrange(shouldOpen)
-end
+hs.hotkey.bind({"cmd", "alt", "ctrl"}, "A", function ()
+    spoon.WorkspaceLoader:createSpacesAndArrange(false)
+end)
 
-function findBundleId(hint)
-    local result = spoon.WorkspaceLoader:findBundleIdByKeyword(hint)
-    print(result)
-end
+
+hs.hotkey.bind({"cmd", "alt", "ctrl"}, "O", function ()
+    spoon.WorkspaceLoader:createSpacesAndArrange(true)
+end)
+
+
+hs.hotkey.bind({"cmd", "alt", "ctrl"}, "S", function ()
+    spoon.BundleIdFinder:search()
+end)
 
 

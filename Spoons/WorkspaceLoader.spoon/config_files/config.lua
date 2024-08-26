@@ -1,7 +1,7 @@
 local config = {
     -- Display 1
     [1] = {
-        -- Supports up to 2 apps in one workspace (windows split in half vertically)
+        -- Currently only supports 1 app in one workspace
         [1] = { 
             "com.apple.Notes" -- Notes on 1st Display's 1st Desktop (workspace)
         },
