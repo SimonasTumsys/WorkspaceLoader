@@ -77,7 +77,7 @@ Experiment to see which display is which in your setup. Currently works with App
 As you can see, to select apps to open/arrange, we need to pass their BundleIDs, not their names. For this, you can use `ctrl+option+cmd+S` hotkey. 
 Enter a hint and press Enter, then choose the correct BundleID from the list - it will be copied to clipboard.
 
-You can add more display and up to 9 workspaces per display. However, the more workspaces and the more apps, the slower the script might be, and more retries might be needed.
+You can add more displays and up to 9 workspaces per display. However, the more workspaces and the more apps, the slower the script might be, and more retries might be needed.
 
 
 ## Tips
