@@ -16,6 +16,7 @@ It opens and/or rearranges your apps based on configurations provided. Comes wit
 
 3. Fork this repo or download the files and put them into `~/.hammerspoon` directory. If there is no such dir, create it.
 4. Restart Hammerspoon (a hammer icon in the top right - press `Quit Hammerspoon` and open it again from Launchpad.
+5. (Optional, but recommended) - open Hammerspoon preferences and check `Launch Hammerspoon at login`
 
 After installation, you will be prompted to choose a configuration file. You can experiment with the example file for now, so select it.
  
