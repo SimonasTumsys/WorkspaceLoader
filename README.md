@@ -25,12 +25,12 @@ After installation, you will be prompted to choose a configuration file. You can
 There are a couple of keybindings already pre-configured. Feel free to change them to your liking.
 They can be found in the `.hammerspoon` directory, `init.lua` file:
 ```lua:init.lua
--- Open applications and attempt moving them to their pre-configured spaces
+-- Rearrange open applications to pre-configured spaces
 hs.hotkey.bind({"cmd", "alt", "ctrl"}, "A", function ()
     spoon.WorkspaceLoader:createSpacesAndArrange(false)
 end)
 
--- Rearrange open applications to pre-configured spaces
+-- Open applications and attempt moving them to their pre-configured spaces
 hs.hotkey.bind({"cmd", "alt", "ctrl"}, "O", function ()
     spoon.WorkspaceLoader:createSpacesAndArrange(true)
 end)
